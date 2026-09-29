@@ -1,0 +1,42 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Production build outputs
+dist/
+build/
+.next/
+out/
+
+# Python virtual environment & cache
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.env
+*.egg-info/
+.pytest_cache/
+
+# Model checkpoints (heavy binaries > 100MB)
+*.ckpt
+*.pt
+# Allow small weights like efficientnet (~15MB), ignore heavy files if any
+ml-service/weights/*.bin
+ml-service/weights/*.tar.gz
+
+# Environment variables
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

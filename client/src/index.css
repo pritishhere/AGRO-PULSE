@@ -1,0 +1,199 @@
+:root {
+  --bg-primary: #0a0f0d;
+  --bg-secondary: #111a16;
+  --bg-card: rgba(18, 28, 24, 0.75);
+  --border-subtle: rgba(46, 204, 113, 0.15);
+  --border-focus: rgba(46, 204, 113, 0.4);
+  
+  --accent-green: #2ecc71;
+  --accent-glow: rgba(46, 204, 113, 0.25);
+  --accent-emerald: #10b981;
+  --accent-warning: #f59e0b;
+  --accent-danger: #ef4444;
+  --accent-danger-glow: rgba(239, 68, 68, 0.35);
+
+  --text-primary: #f0fdf4;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  background-image:
+    linear-gradient(rgba(46, 204, 113, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(46, 204, 113, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 82% 18%, rgba(16, 185, 129, 0.12), transparent 28%),
+    radial-gradient(circle at 12% 78%, rgba(59, 130, 246, 0.08), transparent 24%);
+  background-size: 42px 42px, 42px 42px, auto, auto;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+}
+
+.app-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.dashboard-main {
+  position: relative;
+  z-index: 1;
+}
+
+.surveillance-grid {
+  animation: dashboard-enter 700ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.surveillance-grid > div:first-child {
+  animation: dashboard-enter 700ms 80ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.surveillance-grid > div:last-child {
+  animation: dashboard-enter 700ms 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.reference-strip {
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 16px 34px rgba(0, 0, 0, 0.16);
+}
+
+.reference-strip::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 18%;
+  width: 34%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.8), transparent);
+}
+
+@keyframes dashboard-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Adds depth to the brand mark without distracting from the dashboard. */
+.logo-mark {
+  position: relative;
+  isolation: isolate;
+  transform: perspective(180px) rotateX(4deg) rotateY(-6deg);
+  animation: logo-float 4s ease-in-out infinite;
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.logo-mark::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), transparent 42%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.logo-mark:hover {
+  transform: perspective(180px) rotateX(0deg) rotateY(0deg) translateY(-3px) scale(1.04);
+  box-shadow: 0 14px 24px rgba(5, 150, 105, 0.38), 0 0 26px rgba(16, 185, 129, 0.48) !important;
+}
+
+@keyframes logo-float {
+  0%, 100% { transform: perspective(180px) rotateX(4deg) rotateY(-6deg) translateY(0); }
+  50% { transform: perspective(180px) rotateX(4deg) rotateY(-6deg) translateY(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-mark,
+  .surveillance-grid,
+  .surveillance-grid > div:first-child,
+  .surveillance-grid > div:last-child {
+    animation: none;
+  }
+}
+
+/* Glassmorphism Card Utility */
+.glass-panel {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-panel:hover {
+  border-color: var(--border-focus);
+  box-shadow: 0 16px 36px -14px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(46, 204, 113, 0.04);
+}
+
+/* Radar pulse animation */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+}
+
+.pulse-circle {
+  animation: radar-pulse 3s infinite ease-in-out;
+}
+
+/* Scanline Effect */
+.scanline-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.scanline-container::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(46, 204, 113, 0.1) 50%);
+  background-size: 100% 4px;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-emerald);
+}
