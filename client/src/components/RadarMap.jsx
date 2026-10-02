@@ -75,7 +75,7 @@ export default function RadarMap({
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="glass-panel radar-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Map Header with Real Wind and Controls */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
         <div>
@@ -131,7 +131,7 @@ export default function RadarMap({
 
       {/* Leaflet Map Frame */}
       <div style={{
-        height: '460px',
+        height: 'clamp(360px, 48vw, 500px)',
         width: '100%',
         borderRadius: '12px',
         overflow: 'hidden',
@@ -205,7 +205,7 @@ export default function RadarMap({
       </div>
 
       {/* Radar Metrics Footer */}
-      <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+      <div className="radar-metric-row" style={{ marginTop: '14px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
         <div style={{
           flex: 1,
           minWidth: '140px',

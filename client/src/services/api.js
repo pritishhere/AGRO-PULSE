@@ -58,3 +58,14 @@ export async function fetchLiveWindData(lat, lng) {
     };
   }
 }
+
+export async function enrollForAlerts(enrollment) {
+  const response = await fetch(`${API_BASE}/enroll`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(enrollment)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Enrollment failed');
+  return data;
+}

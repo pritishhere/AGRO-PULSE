@@ -3,7 +3,7 @@ import { ShieldAlert, Activity, Wifi, MapPin } from 'lucide-react';
 
 export default function Navbar({ activeIncidents = 1 }) {
   return (
-    <header style={{
+    <header className="site-navbar" style={{
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -42,7 +42,7 @@ export default function Navbar({ activeIncidents = 1 }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+      <div className="navbar-status" style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',

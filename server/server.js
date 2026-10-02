@@ -3,11 +3,31 @@ const cors = require('cors');
 const multer = require('multer');
 const axios = require('axios');
 const FormData = require('form-data');
+const { MongoClient } = require('mongodb');
+const dns = require('dns');
 require('dotenv').config();
+
+dns.setServers((process.env.MONGODB_DNS_SERVERS || '8.8.8.8,1.1.1.1').split(','));
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const upload = multer({ storage: multer.memoryStorage() });
+const alertSubscribers = new Map();
+let subscriberCollection = null;
+
+function isValidPhoneNumber(phone) {
+  const normalized = String(phone ?? '')
+    .trim()
+    .replace(/[\s()-]/g, '');
+
+  if (!normalized) return false;
+
+  const digitsOnly = normalized.replace(/\+/g, '');
+  if (!/^\+?[1-9]\d{9,14}$/.test(normalized)) return false;
+  if (digitsOnly.length < 10 || digitsOnly.length > 15) return false;
+
+  return true;
+}
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +39,48 @@ app.get('/api/health', (req, res) => {
     service: 'Agro-Pulse Bio-Radar API Gateway v2.5',
     ai_engine: 'PyTorch EfficientNetB0 Microservice',
     smart_routing: 'Active (Confidence Threshold: 0.75)'
+  });
+});
+
+app.post('/api/enroll', async (req, res) => {
+  const { name, phone, latitude, longitude, consent } = req.body;
+  const parsedLatitude = Number(latitude);
+  const parsedLongitude = Number(longitude);
+
+  if (!name?.trim() || !phone?.trim() || !consent) {
+    return res.status(400).json({ error: 'Name, mobile number, and SMS consent are required.' });
+  }
+  if (!isValidPhoneNumber(phone)) {
+    return res.status(400).json({ error: 'Enter a valid mobile number.' });
+  }
+  if (!Number.isFinite(parsedLatitude) || !Number.isFinite(parsedLongitude)) {
+    return res.status(400).json({ error: 'A valid GPS location is required.' });
+  }
+
+  const subscriber = {
+    name: name.trim(),
+    phone: phone.trim(),
+    latitude: parsedLatitude,
+    longitude: parsedLongitude,
+    consent: true,
+    enrolledAt: new Date().toISOString()
+  };
+
+  if (subscriberCollection) {
+    await subscriberCollection.updateOne(
+      { phone: subscriber.phone },
+      { $set: subscriber },
+      { upsert: true }
+    );
+  } else {
+    alertSubscribers.set(subscriber.phone, subscriber);
+  }
+
+  res.status(201).json({
+    success: true,
+    message: 'You are enrolled for nearby crop-risk alerts. SMS delivery will activate when Twilio is configured.',
+    storage: subscriberCollection ? 'mongodb' : 'temporary-memory',
+    subscribers: subscriberCollection ? await subscriberCollection.countDocuments({ consent: true }) : alertSubscribers.size
   });
 });
 
@@ -146,7 +208,7 @@ app.post('/api/diagnose', upload.single('image'), async (req, res) => {
     // Prescription logic
     let prescription = '';
     if (isLateBlightThreat) {
-      prescription = 'CRITICAL OUTBREAK: Phytophthora infestans (Late Blight) confirmed. Spores disperse rapidly via wind currents. Preemptive SMS warnings deployed to neighboring farms in 5km downwind trajectory. Spray Metalaxyl or Mancozeb fungicide immediately.';
+      prescription = 'CRITICAL OUTBREAK: Phytophthora infestans (Late Blight) detected. Spores disperse rapidly via wind currents. Enrolled nearby farmers can be notified after Twilio is configured. Spray Metalaxyl or Mancozeb fungicide immediately.';
     } else if (isHealthy) {
       prescription = 'NORMAL: Plant specimen exhibits high chlorophyll density with zero fungal lesions. Maintain standard irrigation intervals and moisture bio-security.';
     } else {
@@ -160,8 +222,10 @@ app.post('/api/diagnose', upload.single('image'), async (req, res) => {
       windSpeed,
       windBearing,
       contagionRadiusKm: 5.0,
-      smsDispatched: isLateBlightThreat,
-      farmersAlerted: isLateBlightThreat ? 3 : 0,
+      smsDispatched: false,
+      farmersAlerted: 0,
+      alertEnrollmentAvailable: true,
+      smsConfiguration: 'Twilio not configured',
       prescription
     });
 
@@ -171,6 +235,33 @@ app.post('/api/diagnose', upload.single('image'), async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`[OK] Agro-Pulse Gateway listening on http://localhost:${PORT}`);
-});
+async function startServer() {
+  if (process.env.MONGODB_URI) {
+    try {
+      const mongoClient = new MongoClient(process.env.MONGODB_URI, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 5000
+      });
+      await mongoClient.connect();
+      const database = mongoClient.db(process.env.MONGODB_DATABASE || 'agro_pulse');
+      subscriberCollection = database.collection('alert_subscribers');
+      await subscriberCollection.createIndex({ phone: 1 }, { unique: true });
+      console.log('[OK] MongoDB connected for alert enrollment.');
+    } catch (error) {
+      console.error('[WARNING] MongoDB unavailable; using temporary memory:', error.message);
+    }
+  } else {
+    console.log('[WARNING] MONGODB_URI not configured; using temporary memory for enrollment.');
+  }
+
+  app.listen(PORT, () => {
+    console.log(`[OK] Agro-Pulse Gateway listening on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app, isValidPhoneNumber };
+
+if (require.main === module) {
+  startServer();
+}

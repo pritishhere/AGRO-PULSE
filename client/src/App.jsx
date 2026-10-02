@@ -4,6 +4,7 @@ import LeafUpload from './components/LeafUpload.jsx';
 import RadarMap from './components/RadarMap.jsx';
 import DiagnosisCard from './components/DiagnosisCard.jsx';
 import AlertBanner from './components/AlertBanner.jsx';
+import AlertEnrollment from './components/AlertEnrollment.jsx';
 import { uploadLeafForDiagnosis, fetchLiveWindData } from './services/api.js';
 import { Activity, ShieldAlert, Cpu, Sparkles, Satellite } from 'lucide-react';
 
@@ -11,7 +12,7 @@ export default function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [diagnosis, setDiagnosis] = useState(null); // Clean standby initial state
   const [hasThreat, setHasThreat] = useState(false);
-  const [farmCoords, setFarmCoords] = useState([22.5726, 88.3639]);
+  const [farmCoords, setFarmCoords] = useState([0.0, 0.0]);
   const [windData, setWindData] = useState({ speed: 14.8, bearing: 50 });
 
   // Fetch real wind data when coordinates change
@@ -42,7 +43,7 @@ export default function App() {
     <div className="app-shell" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar activeIncidents={hasThreat ? 1 : 0} />
 
-      <main className="dashboard-main" style={{ flex: 1, padding: '24px 32px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
+      <main className="dashboard-main" style={{ flex: 1, padding: '28px 32px 36px', maxWidth: '1440px', margin: '0 auto', width: '100%' }}>
         {/* Dynamic Threat Alert Banner (Only visible when actual outbreak occurs) */}
         {hasThreat && (
           <div style={{ marginBottom: '24px' }}>
@@ -53,14 +54,15 @@ export default function App() {
         {/* 2-Column Responsive Surveillance Grid */}
         <div className="surveillance-grid" style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(350px, 420px) 1fr',
-          gap: '24px',
+          gridTemplateColumns: 'minmax(320px, 380px) minmax(0, 1fr)',
+          gap: '22px',
           alignItems: 'start'
         }}>
           {/* Left Column: Specimen Upload & Result Card */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <LeafUpload onUpload={handleLeafUpload} isAnalyzing={isAnalyzing} />
             <DiagnosisCard result={diagnosis} isAnalyzing={isAnalyzing} />
+            <AlertEnrollment coords={farmCoords} onLocationChange={setFarmCoords} />
           </div>
 
           {/* Right Column: Bio-Surveillance Contagion Radar Map */}
