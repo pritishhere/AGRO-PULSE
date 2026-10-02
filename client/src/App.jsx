@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar.jsx';
 import LeafUpload from './components/LeafUpload.jsx';
 import RadarMap from './components/RadarMap.jsx';
@@ -14,6 +14,33 @@ export default function App() {
   const [hasThreat, setHasThreat] = useState(false);
   const [farmCoords, setFarmCoords] = useState([0.0, 0.0]);
   const [windData, setWindData] = useState({ speed: 14.8, bearing: 50 });
+  const locationWatchId = useRef(null);
+
+  const startLocationTracking = () => {
+    if (!navigator.geolocation) return;
+
+    const updateLocation = (position) => {
+      setFarmCoords([position.coords.latitude, position.coords.longitude]);
+    };
+
+    navigator.geolocation.getCurrentPosition(updateLocation, (error) => {
+      console.error('Location permission or GPS error:', error.message);
+    }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 });
+
+    if (locationWatchId.current === null) {
+      locationWatchId.current = navigator.geolocation.watchPosition(
+        updateLocation,
+        (error) => console.error('Location tracking error:', error.message),
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+      );
+    }
+  };
+
+  useEffect(() => () => {
+    if (locationWatchId.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(locationWatchId.current);
+    }
+  }, []);
 
   // Fetch real wind data when coordinates change
   useEffect(() => {
@@ -27,8 +54,13 @@ export default function App() {
     try {
       const data = await uploadLeafForDiagnosis(file, { lat: farmCoords[0], lng: farmCoords[1] });
       setDiagnosis(data);
-      const isLateBlightThreat = data.disease.toLowerCase().includes('late blight');
+      const diseaseName = data.disease.toLowerCase();
+      const isLateBlightThreat = diseaseName.includes('late blight');
+      const hasDisease = !diseaseName.includes('healthy');
       setHasThreat(isLateBlightThreat);
+      if (hasDisease) {
+        startLocationTracking();
+      }
       if (data.windSpeed) {
         setWindData({ speed: data.windSpeed, bearing: data.windBearing || 50 });
       }
@@ -62,7 +94,11 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <LeafUpload onUpload={handleLeafUpload} isAnalyzing={isAnalyzing} />
             <DiagnosisCard result={diagnosis} isAnalyzing={isAnalyzing} />
-            <AlertEnrollment coords={farmCoords} onLocationChange={setFarmCoords} />
+            <AlertEnrollment
+              coords={farmCoords}
+              onLocationChange={setFarmCoords}
+              onStartLocationTracking={startLocationTracking}
+            />
           </div>
 
           {/* Right Column: Bio-Surveillance Contagion Radar Map */}
@@ -75,6 +111,7 @@ export default function App() {
               windSpeed={windData.speed}
               windBearing={windData.bearing}
               onLocationChange={(newCoords) => setFarmCoords(newCoords)}
+              onStartLocationTracking={startLocationTracking}
             />
           </div>
         </div>

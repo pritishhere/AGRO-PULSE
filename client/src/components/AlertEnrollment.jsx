@@ -2,10 +2,55 @@ import React, { useState } from 'react';
 import { BellRing, CheckCircle2, MapPin } from 'lucide-react';
 import { enrollForAlerts } from '../services/api.js';
 
-export default function AlertEnrollment({ coords, onLocationChange }) {
+export default function AlertEnrollment({ coords, onLocationChange, onStartLocationTracking }) {
   const [form, setForm] = useState({ name: '', phone: '', consent: false });
   const [status, setStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setStatus({ type: 'error', message: 'GPS unavailable in this browser.' });
+      return;
+    }
+
+    setStatus({ type: 'info', message: 'Requesting GPS location…' });
+
+    const handleSuccess = ({ coords: position }) => {
+      const nextCoords = [position.latitude, position.longitude];
+      onLocationChange(nextCoords);
+      onStartLocationTracking?.();
+      setStatus({
+        type: 'success',
+        message: `GPS updated to ${nextCoords[0].toFixed(4)}, ${nextCoords[1].toFixed(4)}.`
+      });
+    };
+
+    const handleError = (error) => {
+      const errorMessage = {
+        1: 'GPS permission blocked. Please allow location access in the browser.',
+        2: 'GPS signal unavailable right now. Please try again in a moment.',
+        3: 'GPS request timed out. Please try again.'
+      }[error.code] || 'Unable to fetch GPS coordinates right now.';
+
+      setStatus({ type: 'error', message: errorMessage });
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      handleSuccess,
+      (error) => {
+        if (error.code === 3) {
+          navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 0
+          });
+          return;
+        }
+        handleError(error);
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+    );
+  };
 
   const updateField = (event) => {
     const { name, value, checked, type } = event.target;
@@ -25,13 +70,6 @@ export default function AlertEnrollment({ coords, onLocationChange }) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const detectLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(({ coords: position }) => {
-      onLocationChange([position.latitude, position.longitude]);
-    });
   };
 
   return (
@@ -55,7 +93,7 @@ export default function AlertEnrollment({ coords, onLocationChange }) {
         </label>
         <div className="enrollment-location">
           <span><MapPin size={14} /> {coords[0].toFixed(4)}, {coords[1].toFixed(4)}</span>
-          <button type="button" onClick={detectLocation}>Use GPS</button>
+          <button type="button" onClick={requestLocation}>Use GPS</button>
         </div>
         <label className="consent-row">
           <input name="consent" type="checkbox" checked={form.consent} onChange={updateField} required />

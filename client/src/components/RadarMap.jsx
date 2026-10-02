@@ -55,23 +55,32 @@ export default function RadarMap({
   diseaseName = '',
   windSpeed = 15.4,
   windBearing = 48,
-  onLocationChange
+  onLocationChange,
+  onStartLocationTracking
 }) {
-  const [mapZoom, setMapZoom] = useState(6);
+  const [mapZoom, setMapZoom] = useState(12);
   const plumeCoords = getWindPlumeCoords(farmLocation, windBearing, 5.0);
 
   const handleDetectLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setMapZoom(12);
-          if (onLocationChange) {
-            onLocationChange([pos.coords.latitude, pos.coords.longitude]);
-          }
-        },
-        (err) => console.log('Geolocation unavailable:', err.message)
-      );
-    }
+    if (!navigator.geolocation) return;
+
+    const updateLocation = (pos) => {
+      setMapZoom(12);
+      if (onLocationChange) {
+        onLocationChange([pos.coords.latitude, pos.coords.longitude]);
+      }
+      onStartLocationTracking?.();
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      updateLocation,
+      () => navigator.geolocation.getCurrentPosition(updateLocation, (err) => console.log('Geolocation unavailable:', err.message), {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 0
+      }),
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 0 }
+    );
   };
 
   return (
